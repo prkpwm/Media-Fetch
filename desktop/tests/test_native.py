@@ -191,6 +191,29 @@ class NativeTests(unittest.TestCase):
         finally:
             app.destroy()
 
+    def test_layout_resize_persists_to_json(self):
+        from app import App
+        layout_file = Path(__file__).parents[1] / 'layout.json'
+        if layout_file.is_file():
+            layout_file.unlink()
+
+        app = App(native_reply=lambda x: None)
+        try:
+            app.geometry('1040x740')
+            app.update_idletasks()
+            app.save_layout()
+
+            self.assertTrue(layout_file.is_file())
+            data = json.loads(layout_file.read_text(encoding='utf-8'))
+            self.assertIn('window', data)
+            self.assertIn('zones', data)
+            self.assertEqual(data['window']['width'], 1040)
+            self.assertEqual(data['window']['height'], 740)
+        finally:
+            app.destroy()
+            if layout_file.is_file():
+                layout_file.unlink()
+
 
 if __name__ == '__main__':
     unittest.main()

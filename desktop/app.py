@@ -1,5 +1,6 @@
 """Launch with python desktop/app.py. UI work stays on the Tk main thread."""
 from pathlib import Path
+import json
 import queue
 import threading
 import tkinter as tk
@@ -56,9 +57,116 @@ class App(tk.Tk):
         self.ffmpeg = tk.StringVar(value=find_ffmpeg())
         self.destination = tk.StringVar(value=default_destination())
         self.status = tk.StringVar(value='Import a HAR capture or inspect an HLS playlist URL.')
+        self._save_layout_after_id = None
         build_ui(self)
+        self.load_layout()
         self.protocol('WM_DELETE_WINDOW', self.close)
         self.after(100, self.poll)
+
+    def schedule_save_layout(self, event=None):
+        if self._save_layout_after_id:
+            try:
+                self.after_cancel(self._save_layout_after_id)
+            except Exception:
+                pass
+        self._save_layout_after_id = self.after(300, self.save_layout)
+
+    def get_layout_data(self):
+        w = self.winfo_width()
+        h = self.winfo_height()
+        x = self.winfo_x()
+        y = self.winfo_y()
+        try:
+            geom = self.geometry()
+            if '+' in geom and 'x' in geom:
+                parts = geom.split('+')
+                dims = parts[0].split('x')
+                if w <= 200 and int(dims[0]) > 200:
+                    w = int(dims[0])
+                    h = int(dims[1])
+                    if len(parts) >= 3:
+                        x = int(parts[1])
+                        y = int(parts[2])
+        except Exception:
+            pass
+
+        data = {
+            'window': {
+                'width': w,
+                'height': h,
+                'x': x,
+                'y': y
+            },
+            'zones': {}
+        }
+        try:
+            if hasattr(self, 'v_paned') and self.v_paned.winfo_exists():
+                data['zones']['v_sash_0'] = self.v_paned.sash_coord(0)[1]
+                data['zones']['v_sash_1'] = self.v_paned.sash_coord(1)[1]
+        except Exception:
+            pass
+
+        try:
+            if hasattr(self, 'h_paned') and self.h_paned.winfo_exists():
+                data['zones']['h_sash_0'] = self.h_paned.sash_coord(0)[0]
+        except Exception:
+            pass
+
+        return data
+
+    def save_layout(self):
+        try:
+            if not self.winfo_exists():
+                return
+            w = self.winfo_width()
+            h = self.winfo_height()
+            if w < 200 or h < 200:
+                return
+            data = self.get_layout_data()
+            layout_path = Path(__file__).parent / 'layout.json'
+            temp_path = layout_path.with_suffix('.tmp')
+            temp_path.write_text(json.dumps(data, indent=2), encoding='utf-8')
+            temp_path.replace(layout_path)
+        except Exception:
+            pass
+
+    def load_layout(self):
+        layout_path = Path(__file__).parent / 'layout.json'
+        if not layout_path.is_file():
+            return
+        try:
+            data = json.loads(layout_path.read_text(encoding='utf-8'))
+            win = data.get('window', {})
+            w = win.get('width')
+            h = win.get('height')
+            if w and h and w >= 500 and h >= 400:
+                x = win.get('x')
+                y = win.get('y')
+                if x is not None and y is not None and x >= 0 and y >= 0:
+                    self.geometry(f'{w}x{h}+{x}+{y}')
+                else:
+                    self.geometry(f'{w}x{h}')
+
+            zones = data.get('zones', {})
+            def restore_sashes():
+                try:
+                    if hasattr(self, 'v_paned') and self.v_paned.winfo_exists():
+                        v0 = zones.get('v_sash_0')
+                        v1 = zones.get('v_sash_1')
+                        if v0 is not None and v0 > 10:
+                            self.v_paned.sash_place(0, 0, v0)
+                        if v1 is not None and v1 > 10:
+                            self.v_paned.sash_place(1, 0, v1)
+                    if hasattr(self, 'h_paned') and self.h_paned.winfo_exists():
+                        h0 = zones.get('h_sash_0')
+                        if h0 is not None and h0 > 10:
+                            self.h_paned.sash_place(0, h0, 0)
+                except Exception:
+                    pass
+
+            self.after(50, restore_sashes)
+        except Exception:
+            pass
 
     def get_current_media_status(self):
         selection = self.table.selection()
@@ -443,9 +551,11 @@ class App(tk.Tk):
             messagebox.showinfo('Work in progress', 'Wait for inspection to finish before closing.'); return
         if self.active_jobs_count > 0:
             if messagebox.askyesno('Downloads in progress', f'There are {self.active_jobs_count} active download(s). Cancel them and exit?'):
+                self.save_layout()
                 self.cancel_all()
                 self.destroy()
             return
+        self.save_layout()
         self.destroy()
 
 

@@ -112,6 +112,8 @@ def build_ui(app):
         opaqueresize=True
     )
     v_paned.grid(row=2, column=0, sticky='nsew')
+    app.v_paned = v_paned
+    v_paned.bind('<ButtonRelease-1>', lambda event: app.schedule_save_layout() if hasattr(app, 'schedule_save_layout') else None)
 
     # Zone 01: Add Your Media
     source_border, source = card(v_paned, 14)
@@ -140,6 +142,8 @@ def build_ui(app):
         sashcursor='size_we',
         opaqueresize=True
     )
+    app.h_paned = h_paned
+    h_paned.bind('<ButtonRelease-1>', lambda event: app.schedule_save_layout() if hasattr(app, 'schedule_save_layout') else None)
 
     # Zone 02: Available Qualities
     left_border, left = card(h_paned, 14)
@@ -251,8 +255,14 @@ def build_ui(app):
     footer = ttk.Frame(outer)
     footer.grid(row=3, column=0, sticky='ew', pady=(12, 0))
     label(footer, 'HLS video  /  Audio + video merging  /  MP4 export', 'Muted.TLabel').pack(side='left')
-    label(footer, 'MEDIA FETCH  ·  0.2', 'Kicker.TLabel').pack(side='right')
-    app.bind('<Configure>', lambda event: app.status_label.configure(wraplength=max(500, app.winfo_width() - 210)) if event.widget is app else None)
+    def _on_app_configure(event):
+        if event.widget is app:
+            if hasattr(app, 'status_label') and app.status_label.winfo_exists():
+                app.status_label.configure(wraplength=max(500, app.winfo_width() - 210))
+            if hasattr(app, 'schedule_save_layout'):
+                app.schedule_save_layout()
+
+    app.bind('<Configure>', _on_app_configure)
 
 
 def add_task_widget(app, task_id, title_text, detail_text):
