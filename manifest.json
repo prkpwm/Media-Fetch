@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Media Fetch",
+  "version": "0.2.0",
+  "description": "Detect media in a tab and manage direct or unencrypted HLS downloads.",
+  "minimum_chrome_version": "102",
+  "permissions": ["downloads", "webRequest", "storage", "activeTab", "nativeMessaging"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "background": {"service_worker": "background.js", "type": "module"},
+  "action": {"default_title": "Open Media Fetch"}
+}

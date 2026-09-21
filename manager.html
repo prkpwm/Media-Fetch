@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Media Fetch</title><link rel="stylesheet" href="style.css"></head>
+<body><main><header><span class="logo">↓</span><div><h1>Media Fetch</h1><p>Media from your selected tab</p></div></header>
+<p class="notice">Play the video in the original tab. Detected files appear here automatically. Keep this manager open during HLS downloads.</p>
+<section><h2>Desktop connection</h2><p class="meta">One-time setup: run this command from D:\dim, then reload the extension. Only this extension ID is allowed to connect.</p><code id="setup-command"></code><div class="actions"><button id="copy-setup">Copy setup command</button><button id="check-desktop">Check connection</button></div><p id="desktop-status" role="status">Not checked</p></section>
+<section><h2>Detected media <span id="count">0</span></h2><div id="media"></div></section>
+<section><h2>Download a URL</h2><form id="manual"><input id="url" type="url" placeholder="https://example.com/video.mp4" required aria-label="Media URL"><button>Download</button></form></section>
+<p id="status" role="status" aria-live="polite"></p><button id="cancel" hidden>Cancel HLS</button>
+<section><h2>Your downloads</h2><div id="downloads"></div></section>
+<footer>Direct files and unencrypted MPEG-TS HLS VOD supported. DASH, DRM, separate audio tracks, and live capture are unsupported. HLS is limited to 512 MiB per job. No data is sent to a service.</footer>
+</main><script type="module" src="manager.js"></script></body></html>

@@ -1,0 +1,11 @@
+*.har
+node_modules/
+desktop/.vendor/
+dimdesktop.vendor/
+desktop/.native/
+__pycache__/
+*.pyc
+*.partial.mp4
+*.lnk
+.vscode/
+.idea/
