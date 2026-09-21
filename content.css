@@ -1,0 +1,150 @@
+/* Media Fetch - IDM-style Floating Video Downloader Overlay */
+
+.mf-idm-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 2147483645;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  pointer-events: auto;
+  user-select: none;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.mf-idm-container:hover {
+  opacity: 1;
+}
+
+.mf-idm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 13px;
+  background: rgba(15, 23, 42, 0.88);
+  color: #f1f5f9;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45), 0 0 10px rgba(16, 185, 129, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transition: all 0.15s ease;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.mf-idm-badge:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+  color: #ffffff;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+  transform: translateY(-1px);
+}
+
+.mf-idm-icon {
+  display: inline-block;
+  color: #10b981;
+  font-size: 14px;
+}
+
+.mf-idm-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 270px;
+  max-height: 380px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 16px rgba(16, 185, 129, 0.15);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mf-idm-dropdown.mf-idm-show {
+  display: flex;
+}
+
+.mf-idm-header {
+  padding: 6px 8px 8px;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+  margin-bottom: 4px;
+}
+
+.mf-idm-title {
+  font-weight: 700;
+  font-size: 12px;
+  color: #38bdf8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mf-idm-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.mf-idm-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  border: 1px solid transparent;
+}
+
+.mf-idm-item:hover {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #ffffff;
+}
+
+.mf-idm-item-label {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.mf-idm-item-meta {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.mf-idm-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 2147483647;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #10b981;
+  color: #f1f5f9;
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(16, 185, 129, 0.3);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  animation: mf-fade-in 0.2s ease-out;
+}
+
+@keyframes mf-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}

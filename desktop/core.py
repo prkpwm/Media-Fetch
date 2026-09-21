@@ -212,11 +212,20 @@ class DownloadJob:
             for index, url in enumerate([self.choice.url] + ([self.choice.audio_url] if self.choice.audio_url else [])):
                 if self.cancelled.is_set():
                     return
-                selected = fetch_playlist(url, self.choice.headers)
-                if len(selected) != 1 or selected[0].url != selected[0].source:
-                    raise ValueError('Select a media quality, not a nested master playlist.')
-                if index == 0:
-                    self.choice.duration = selected[0].duration
+                if '.m3u8' in url.lower() or self.choice.source == 'hls':
+                    selected = fetch_playlist(url, self.choice.headers)
+                    if len(selected) != 1 or selected[0].url != selected[0].source:
+                        raise ValueError('Select a media quality, not a nested master playlist.')
+                    if index == 0:
+                        self.choice.duration = selected[0].duration
+                else:
+                    try:
+                        selected = fetch_playlist(url, self.choice.headers)
+                        if len(selected) == 1 and selected[0].url == selected[0].source:
+                            if index == 0:
+                                self.choice.duration = selected[0].duration
+                    except ValueError:
+                        pass
             if self.cancelled.is_set():
                 return
             fd, temporary = tempfile.mkstemp(prefix='.media-fetch-', suffix='.partial.mp4', dir=self.destination.parent)

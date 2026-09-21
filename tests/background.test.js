@@ -19,5 +19,20 @@ test('captures, deduplicates and clears media per tab',async()=>{
   listeners.updated(7,{title:'Episode Title from HTML Head'});
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(data['source:7'].title,'Episode Title from HTML Head');
+
+  // Test media_detected_from_page from in-page content script
+  listeners.message({
+    type: 'media_detected_from_page',
+    payload: {
+      title: 'YouTube Stream Title',
+      url: 'https://youtube.com/watch?v=xyz',
+      formats: [{url: 'https://googlevideo.com/videoplayback?itag=18', mime: 'video/mp4'}]
+    }
+  }, {tab: {id: 10}}, () => {});
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(data['source:10'].title, 'YouTube Stream Title');
+  assert.equal(data['media:10'].length, 1);
+  assert.equal(data['media:10'][0].url, 'https://googlevideo.com/videoplayback?itag=18');
+
   delete globalThis.chrome;
 });
