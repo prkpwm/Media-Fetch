@@ -101,11 +101,20 @@ def import_har(path):
     with open(path, encoding='utf-8-sig') as handle:
         entries = json.load(handle)['log']['entries']
     playlists = {}
+    has_dash_drm = False
     for entry in entries:
         response = entry.get('response', {})
         content = response.get('content', {})
         request = entry.get('request', {})
         url = request.get('url', '')
+        mime = content.get('mimeType', '').lower()
+        req_url_lower = url.lower()
+
+        if ('.mpd' in req_url_lower or 'dash' in mime) and ('widevine' in req_url_lower or 'cenc' in (content.get('text', '') or '').lower() or 'default_kid' in (content.get('text', '') or '').lower()):
+            has_dash_drm = True
+        elif 'widevine' in req_url_lower or 'playready' in req_url_lower:
+            has_dash_drm = True
+
         if response.get('status') != 200 or not content.get('text'):
             continue
         if 'mpegurl' not in content.get('mimeType', '').lower() and not urlsplit(url).path.lower().endswith('.m3u8'):
@@ -134,6 +143,8 @@ def import_har(path):
             target.append(choice)
     result = list({(c.url, c.audio_url): c for c in masters or media}.values())
     if not result:
+        if has_dash_drm:
+            raise ValueError('This capture contains an MPEG-DASH stream protected by Widevine DRM (CENC). DRM-protected media requires a secure browser CDM license exchange and cannot be decoded.')
         raise ValueError('No supported HLS playlists with response bodies found in this HAR.')
     return result
 

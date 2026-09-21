@@ -61,6 +61,17 @@ class ParserTests(unittest.TestCase):
         self.assertEqual(choice.url, 'https://cdn.invalid/video.m3u8?token=abc')
         self.assertEqual(choice.headers, {'Origin': 'https://player.invalid'})
 
+    def test_har_rejects_dash_widevine_drm(self):
+        mpd_xml = '<MPD><ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/></MPD>'
+        entry = {'request': {'url': 'https://cdn.invalid/index.mpd'},
+                 'response': {'status': 200, 'content': {'mimeType': 'application/dash+xml', 'text': mpd_xml}}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'capture.har'
+            path.write_text(json.dumps({'log': {'entries': [entry]}}))
+            with self.assertRaises(ValueError) as ctx:
+                import_har(path)
+            self.assertIn('Widevine DRM', str(ctx.exception))
+
     def test_command_maps_both_tracks_without_shell_or_transcoding(self):
         choice = Choice('https://cdn.invalid/video.m3u8', audio_url='https://cdn.invalid/audio.m3u8')
         command = build_command('ffmpeg', choice, 'a file.mp4')
