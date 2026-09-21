@@ -99,7 +99,31 @@
     const dropdown = document.createElement('div');
     dropdown.className = 'mf-idm-dropdown';
 
-    function populateDropdown() {
+    function openDesktopApp(targetUrl) {
+      const titleText = ytData?.title || document.title || 'Detected Video';
+      showToast('Opening in Media Fetch Desktop…');
+      chrome.runtime.sendMessage({
+        type: 'open_desktop_for_tab',
+        payload: {
+          url: targetUrl || '',
+          title: titleText,
+          pageUrl: location.href
+        }
+      }, (res) => {
+        if (res?.ok) {
+          showToast('✓ Opened in Media Fetch Desktop!');
+        } else {
+          showToast(res?.error || 'Could not connect to Desktop. Opening Manager…');
+          openManager();
+        }
+      });
+    }
+
+    function openManager() {
+      chrome.runtime.sendMessage({type: 'open_manager_for_tab'}, () => {});
+    }
+
+    async function populateDropdown() {
       dropdown.innerHTML = '';
 
       const titleText = ytData?.title || document.title || 'Detected Video';
@@ -107,18 +131,38 @@
       header.className = 'mf-idm-header';
       header.innerHTML = `
         <div class="mf-idm-title" title="${titleText}">${titleText}</div>
-        <div class="mf-idm-subtitle">Select format for Media Fetch Desktop</div>
+        <div class="mf-idm-subtitle">Media Fetch Desktop Link</div>
       `;
       dropdown.appendChild(header);
 
       const items = [];
+
+      // Query background for streams sniffed by webRequest
+      try {
+        const bgRes = await new Promise(resolve => {
+          chrome.runtime.sendMessage({type: 'get_tab_media'}, res => resolve(res));
+        });
+        for (const row of bgRes?.media || []) {
+          const kindLabel = row.kind === 'hls' ? 'HLS Stream (m3u8)' : (row.kind === 'dash' ? 'DASH Stream' : 'Media Stream');
+          let displayHost = '';
+          try { displayHost = new URL(row.url).hostname; } catch(e) {}
+          items.push({
+            label: kindLabel,
+            meta: displayHost,
+            url: row.url,
+            audioUrl: '',
+            height: 0,
+            bitrate: 0
+          });
+        }
+      } catch (e) {}
 
       // If YouTube formats available
       if (ytData && ytData.formats && ytData.formats.length > 0) {
         const bestAudio = ytData.audioFormats?.[0] || null;
 
         for (const f of ytData.formats) {
-          if (!f.url) continue; // skip unplayable / ciphered items if any
+          if (!f.url) continue;
           items.push({
             label: f.quality || `${f.height}p`,
             meta: f.fps ? `${f.fps}fps · ${Math.round(f.bitrate / 1000)} kbps` : '',
@@ -142,7 +186,7 @@
         }
       } else if (video.currentSrc || video.src) {
         const src = video.currentSrc || video.src;
-        if (src && !src.startsWith('blob:') && !src.startsWith('mediasource:')) {
+        if (src && !src.startsWith('blob:') && !src.startsWith('mediasource:') && !items.some(i => i.url === src)) {
           const res = video.videoHeight ? `${video.videoHeight}p` : 'Original Video';
           items.push({
             label: res,
@@ -156,12 +200,28 @@
       }
 
       if (items.length === 0) {
-        const empty = document.createElement('div');
-        empty.style.padding = '8px';
-        empty.style.color = '#94a3b8';
-        empty.style.fontSize = '11px';
-        empty.textContent = 'Media stream detected. Open Media Fetch Manager to download or capture.';
-        dropdown.appendChild(empty);
+        const emptyCard = document.createElement('div');
+        emptyCard.className = 'mf-idm-empty-card';
+        emptyCard.innerHTML = `
+          <div class="mf-idm-empty-msg">Media stream active. Click below to open in Desktop app or launch Manager:</div>
+          <button class="mf-idm-btn-primary" type="button">
+            <span>🖥 Open in Media Fetch Desktop</span>
+          </button>
+          <button class="mf-idm-btn-secondary" type="button">
+            <span>📋 Open Media Manager</span>
+          </button>
+        `;
+        emptyCard.querySelector('.mf-idm-btn-primary').onclick = (e) => {
+          e.stopPropagation();
+          dropdown.classList.remove('mf-idm-show');
+          openDesktopApp();
+        };
+        emptyCard.querySelector('.mf-idm-btn-secondary').onclick = (e) => {
+          e.stopPropagation();
+          dropdown.classList.remove('mf-idm-show');
+          openManager();
+        };
+        dropdown.appendChild(emptyCard);
         return;
       }
 
@@ -179,12 +239,41 @@
         };
         dropdown.appendChild(row);
       });
+
+      // Also append direct desktop and manager launcher buttons
+      const divider = document.createElement('div');
+      divider.className = 'mf-idm-divider';
+      dropdown.appendChild(divider);
+
+      const appBtn = document.createElement('button');
+      appBtn.className = 'mf-idm-btn-primary';
+      appBtn.type = 'button';
+      appBtn.innerHTML = `<span>🖥 Open in Media Fetch Desktop</span>`;
+      appBtn.onclick = (e) => {
+        e.stopPropagation();
+        dropdown.classList.remove('mf-idm-show');
+        openDesktopApp(items[0]?.url);
+      };
+      dropdown.appendChild(appBtn);
+
+      const mgrBtn = document.createElement('button');
+      mgrBtn.className = 'mf-idm-btn-secondary';
+      mgrBtn.type = 'button';
+      mgrBtn.innerHTML = `<span>📋 Open Media Manager</span>`;
+      mgrBtn.onclick = (e) => {
+        e.stopPropagation();
+        dropdown.classList.remove('mf-idm-show');
+        openManager();
+      };
+      dropdown.appendChild(mgrBtn);
     }
 
-    badge.onclick = (e) => {
+    badge.onclick = async (e) => {
       e.stopPropagation();
-      populateDropdown();
       dropdown.classList.toggle('mf-idm-show');
+      if (dropdown.classList.contains('mf-idm-show')) {
+        await populateDropdown();
+      }
     };
 
     document.addEventListener('click', (e) => {

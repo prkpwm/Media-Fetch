@@ -66,6 +66,64 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true;
   }
+
+  if (message?.type === 'get_tab_media') {
+    const tabId = sender.tab?.id;
+    if (!tabId) { sendResponse({ok: false, media: []}); return true; }
+    (async () => {
+      const key = `media:${tabId}`;
+      const rows = (await chrome.storage.session.get(key))[key] || [];
+      const sourceKey = `source:${tabId}`;
+      const source = (await chrome.storage.session.get(sourceKey))[sourceKey] || {};
+      sendResponse({ok: true, media: rows, source});
+    })();
+    return true;
+  }
+
+  if (message?.type === 'open_desktop_for_tab') {
+    const tab = sender.tab;
+    const tabId = tab?.id;
+    (async () => {
+      const key = `media:${tabId}`;
+      const rows = (await chrome.storage.session.get(key))[key] || [];
+      const sourceKey = `source:${tabId}`;
+      const source = (await chrome.storage.session.get(sourceKey))[sourceKey] || {url: tab?.url, title: tab?.title};
+      const url = message.payload?.url || (rows.length > 0 ? rows[0].url : (source.url || tab?.url || ''));
+      const pageUrl = message.payload?.pageUrl || source.url || tab?.url || '';
+      const title = message.payload?.title || source.title || tab?.title || 'Video';
+
+      try {
+        const res = await nativeRequest({
+          action: 'open',
+          url,
+          pageUrl,
+          title,
+          userAgent: navigator.userAgent
+        });
+        sendResponse({ok: true, ...res});
+      } catch (e) {
+        sendResponse({ok: false, error: e.message});
+      }
+    })();
+    return true;
+  }
+
+  if (message?.type === 'open_manager_for_tab') {
+    const tab = sender.tab;
+    const tabId = tab?.id;
+    (async () => {
+      if (tabId) {
+        const sourceKey = `source:${tabId}`;
+        const source = (await chrome.storage.session.get(sourceKey))[sourceKey] || {};
+        await chrome.storage.session.set({[sourceKey]: {...source, url: tab.url || '', title: tab.title || ''}});
+        await chrome.tabs.create({url: chrome.runtime.getURL(`manager.html?tab=${tabId}`)});
+        sendResponse({ok: true});
+      } else {
+        sendResponse({ok: false, error: 'No active tab.'});
+      }
+    })();
+    return true;
+  }
 });
 let queue = Promise.resolve();
 function enqueue(work) { queue = queue.then(work).catch(console.error); }
