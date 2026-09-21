@@ -102,6 +102,7 @@ def import_har(path):
         entries = json.load(handle)['log']['entries']
     playlists = {}
     has_dash_drm = False
+    has_youtube_ump = False
     for entry in entries:
         response = entry.get('response', {})
         content = response.get('content', {})
@@ -114,6 +115,8 @@ def import_har(path):
             has_dash_drm = True
         elif 'widevine' in req_url_lower or 'playready' in req_url_lower:
             has_dash_drm = True
+        elif 'application/vnd.yt-ump' in mime or ('googlevideo.com' in req_url_lower and ('videoplayback' in req_url_lower or 'sabr=1' in req_url_lower)):
+            has_youtube_ump = True
 
         if response.get('status') != 200 or not content.get('text'):
             continue
@@ -145,6 +148,8 @@ def import_har(path):
     if not result:
         if has_dash_drm:
             raise ValueError('This capture contains an MPEG-DASH stream protected by Widevine DRM (CENC). DRM-protected media requires a secure browser CDM license exchange and cannot be decoded.')
+        if has_youtube_ump:
+            raise ValueError('This capture contains YouTube SABR/UMP media (application/vnd.yt-ump). Proprietary UMP chunked streams require session-bound initialization headers and signature deciphering, and cannot be decoded from a browser HAR capture.')
         raise ValueError('No supported HLS playlists with response bodies found in this HAR.')
     return result
 

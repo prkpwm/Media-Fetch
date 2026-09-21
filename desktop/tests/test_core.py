@@ -72,6 +72,22 @@ class ParserTests(unittest.TestCase):
                 import_har(path)
             self.assertIn('Widevine DRM', str(ctx.exception))
 
+    def test_har_rejects_youtube_ump(self):
+        entry = {'request': {'url': 'https://rr2---sn-5fo-c33l7.googlevideo.com/videoplayback?sabr=1'},
+                 'response': {'status': 200, 'content': {'mimeType': 'application/vnd.yt-ump', 'text': 'data'}}}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'capture.har'
+            path.write_text(json.dumps({'log': {'entries': [entry]}}))
+            with self.assertRaises(ValueError) as ctx:
+                import_har(path)
+            self.assertIn('YouTube SABR/UMP', str(ctx.exception))
+
+        yt_har = Path(__file__).resolve().parents[2] / 'www.youtube.com.har'
+        if yt_har.exists():
+            with self.assertRaises(ValueError) as ctx:
+                import_har(yt_har)
+            self.assertIn('YouTube SABR/UMP', str(ctx.exception))
+
     def test_command_maps_both_tracks_without_shell_or_transcoding(self):
         choice = Choice('https://cdn.invalid/video.m3u8', audio_url='https://cdn.invalid/audio.m3u8')
         command = build_command('ffmpeg', choice, 'a file.mp4')
