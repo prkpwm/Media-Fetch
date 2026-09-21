@@ -3,7 +3,7 @@ export function classify(url, mime = '') {
   try { const u = new URL(url); if (!['http:', 'https:'].includes(u.protocol)) return null; path = u.pathname; } catch { return null; }
   if (/\.m3u8$/i.test(path) || /mpegurl/i.test(mime)) return 'hls';
   if (/\.mpd$/i.test(path) || /dash\+xml/i.test(mime)) return 'dash';
-  if (/\.(ts|m4s)$/i.test(path) || /mp2t/i.test(mime)) return null;
+  if (/\.(ts|m4s|dash)$/i.test(path) || /mp2t/i.test(mime)) return null;
   if (/\.(mp4|webm|mkv|mov|mp3|m4a|ogg|wav)$/i.test(path) || /^(video|audio)\//i.test(mime)) return 'file';
   return null;
 }

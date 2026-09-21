@@ -13,6 +13,8 @@ test('recognizes extensionless responses and ignores segments',()=>{
   assert.equal(classify('https://cdn.example/play?id=1','application/vnd.apple.mpegurl'),'hls');
   assert.equal(classify('https://cdn.example/video.MP4?token=x'),'file');
   assert.equal(classify('https://cdn.example/seg.ts','video/mp2t'),null);
+  assert.equal(classify('https://cdn.example/video=800000.dash','video/mp4'),null);
+  assert.equal(classify('https://cdn.example/audio_eng=93377.dash','audio/mp4'),null);
   assert.equal(classify('blob:https://example.com/id','video/mp4'),null);
   assert.equal(classify('https://cdn.example/manifest','application/dash+xml'),'dash');
 });
